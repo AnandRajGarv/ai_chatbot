@@ -1,31 +1,66 @@
 import streamlit as st
 from groq import Groq
 import os
-from dotenv import load_dotenv
 
-# load env variables
-load_dotenv()
+# Page config
+st.set_page_config(page_title="AI Chatbot", page_icon="🤖")
 
-# create groq client
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+st.title("🤖 MC STAN")
 
-st.title("AI Chatbot 🤖")
+# Sidebar personality selector
+st.sidebar.title("Bot Personality")
 
-# conversation memory
+personality = st.sidebar.selectbox(
+    "Choose personality",
+    [
+        "Friendly Assistant",
+        "Sarcastic Bot",
+        "Professor",
+        "Coding Mentor",
+        "Motivational Coach"
+    ]
+)
+
+# Personality prompts
+if personality == "Friendly Assistant":
+    system_prompt = "You are a friendly AI assistant who helps users politely."
+
+elif personality == "Sarcastic Bot":
+    system_prompt = "You are a witty and sarcastic AI assistant who replies with clever humor."
+
+elif personality == "Professor":
+    system_prompt = "You are a professor who explains topics clearly and step by step."
+
+elif personality == "Coding Mentor":
+    system_prompt = "You are a senior software engineer who helps users learn programming."
+
+elif personality == "Motivational Coach":
+    system_prompt = "You are a motivational coach who encourages users positively."
+
+
+# API key from Streamlit secrets
+api_key = st.secrets["GROQ_API_KEY"]
+
+client = Groq(api_key=api_key)
+
+# Chat memory
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = [
+        {"role": "system", "content": system_prompt}
+    ]
 
-# display previous messages
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.write(msg["content"])
+# Show chat history
+for message in st.session_state.messages:
+    if message["role"] != "system":
+        with st.chat_message(message["role"]):
+            st.write(message["content"])
 
-# user input
+# Chat input
 prompt = st.chat_input("Ask something...")
 
 if prompt:
 
-    # add user message
+    # Save user message
     st.session_state.messages.append(
         {"role": "user", "content": prompt}
     )
@@ -33,7 +68,7 @@ if prompt:
     with st.chat_message("user"):
         st.write(prompt)
 
-    # call groq API
+    # Call Groq API
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=st.session_state.messages
@@ -41,7 +76,7 @@ if prompt:
 
     reply = response.choices[0].message.content
 
-    # store response
+    # Save assistant reply
     st.session_state.messages.append(
         {"role": "assistant", "content": reply}
     )
